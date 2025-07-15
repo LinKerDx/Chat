@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LinKDx's Chat</title>
+    <script type="module">
+    import { io } from 'https://cdn.socket.io/4.3.2/socket.io.esm.min.js'
+    const socket = io()
+
+    const form = document.getElementById('form')
+    const input = document.getElementById('input')
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        if(input.value){
+            socket.emit('chat message', input.value)
+            input.value = ''
+        }
+    })
+
+    socket
+    </script>
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
@@ -12,7 +29,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
+            background-color: #666;
             display: grid;
             height: 100vh;
             padding: 36px;
@@ -28,12 +45,39 @@
             height: 100%;
             position: relative;
         }
+
+    .romboide {
+        background-color: #3498db;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        transform: skewX(-20deg); /* Inclinación tipo romboide */
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+        margin-right: 10px;
+}
+
+.romboide:hover {
+  background-color: #2980b9;
+}
+        form{
+            display: flex;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #fff;
+            padding: 10px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
     <section id="chat">
-        <form action="">
-            
+        <form id="form">
+            <input type="text" name="message" id="input" placeholder="Type your message here..." required autocomplete="off">
+            <button type="submit" class="romboide">Send</button>
         </form>
     </section>
 
