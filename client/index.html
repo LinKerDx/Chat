@@ -6,15 +6,37 @@
     <title>LinKDx's Chat</title>
     <script type="module">
     import { io } from 'https://cdn.socket.io/4.3.2/socket.io.esm.min.js'
-    const socket = io()
+    
+
+        const getUserName = async () => {
+        const username = localStorage.getItem('username')
+        if (username) return username
+        const name = prompt('What is your name?')
+        if(name){
+            localStorage.setItem('username', name)
+            return name
+        }
+        return 'Anonymous'
+    }
+    
+
+    const socket = io({
+        auth: {
+            user: await getUserName(),
+            serverOffset: 0,
+        }
+    })
 
     const form = document.getElementById('form')
     const input = document.getElementById('input')
     const messages = document.getElementById('messages')
 
-    socket.on('chat message', (msg) =>{
+
+    socket.on('chat message', (msg, serverOffset, username ) =>{
         const item = `<li>${msg}</li>`
         messages.insertAdjacentHTML('beforeend', item)
+        socket.auth.serverOffset = serverOffset
+        window.scrollTo(0, document.body.scrollHeight)
     })
 
     form.addEventListener('submit', (e) => {
