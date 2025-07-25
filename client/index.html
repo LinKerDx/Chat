@@ -7,8 +7,7 @@
     <script type="module">
     import { io } from 'https://cdn.socket.io/4.3.2/socket.io.esm.min.js'
     
-
-        const getUserName = async () => {
+    const getUserName = async () => {
         const username = localStorage.getItem('username')
         if (username) return username
         const name = prompt('What is your name?')
@@ -19,10 +18,12 @@
         return 'Anonymous'
     }
     
+    const currentUser = await getUserName()
 
     const socket = io({
         auth: {
-            user: await getUserName(),
+            user: currentUser,
+
             serverOffset: 0,
         }
     })
@@ -31,12 +32,50 @@
     const input = document.getElementById('input')
     const messages = document.getElementById('messages')
 
+    // Variable para trackear el último minuto mostrado
+    let lastMinute = null
 
-    socket.on('chat message', (msg, serverOffset, username ) =>{
-        const item = `<li>
-                <p>${msg}</p>
-                <small>${username}</small>
-            </li>`
+    // Función para formatear tiempo
+    const formatTime = (date) => {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    // Función para obtener minuto actual como string
+    const getCurrentMinute = (date) => {
+        return `${date.getHours()}:${date.getMinutes()}`
+    }
+
+    // Función para crear timestamp
+    const createTimestamp = (time) => {
+        return `<li class="timestamp">
+                    <span class="time-label">${time}</span>
+                </li>`
+    }
+
+    // Función para crear mensajes con diferentes estilos
+    const createMessage = (msg, username, isSent) => {
+        const messageClass = isSent ? 'message-sent' : 'message-received'
+        return `<li class="message ${messageClass}">
+                    <div class="message-content">
+                        <p>${msg}</p>
+                        <small class="username">${username}</small>
+                    </div>
+                </li>`
+    }
+
+    socket.on('chat message', (msg, serverOffset, username, timestamp) => {
+        const messageTime = timestamp ? new Date(timestamp) : new Date()
+        const currentMinute = getCurrentMinute(messageTime)
+
+        if (lastMinute !== currentMinute) {
+            const timestampItem = createTimestamp(formatTime(messageTime))
+            messages.insertAdjacentHTML('beforeend', timestampItem)
+            lastMinute = currentMinute
+        }
+        
+        const isSent = username === currentUser
+        const item = createMessage(msg, username, isSent)
+        
         messages.insertAdjacentHTML('beforeend', item)
         socket.auth.serverOffset = serverOffset
         window.scrollTo(0, document.body.scrollHeight)
@@ -49,8 +88,6 @@
             input.value = ''
         }
     })
-
-    socket
     </script>
     <style>
         *, *::before, *::after {
@@ -60,35 +97,102 @@
         :root{
             color-scheme: light dark;
         }
+        
         body {
             margin: 0;
             padding: 36px;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif, sans-serif;           
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;           
             display: grid;
             height: 100vh;
             grid-template-rows: 1fr;
             place-content: center;
+            background-color: #f0f2f5;
         }
 
         #messages {
             list-style-type: none;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            height: calc(100% - 80px);
         } 
 
-        #messages li {
-            padding: .5rem 1rem;         
+        .message {
+            max-width: 70%;
+            margin: 5px 0;
         }
-        #messages li:nth-child(odd) {
-            background-color: #000;  }
+
+        .timestamp {
+            text-align: center;
+            margin: 15px 0;
+            list-style: none;
+        }
+
+        .time-label {
+            background-color: rgba(0,0,0,0.1);
+            color: #666;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .message-sent {
+            align-self: flex-end;
+        }
+
+        .message-sent .message-content {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 20px 20px 5px 20px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+        }
+
+        .message-received {
+            align-self: flex-start;
+        }
+
+        .message-received .message-content {
+            background-color: #e5e5ea;
+            color: #333;
+            border-radius: 20px 20px 20px 5px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .message-content p {
+            margin: 0 0 5px 0;
+            word-wrap: break-word;
+        }
+
+        .message-sent .username {
+            color: rgba(255,255,255,0.8);
+            font-size: 11px;
+            text-align: right;
+            display: block;
+        }
+
+        .message-received .username {
+            color: #666;
+            font-size: 11px;
+            text-align: left;
+            display: block;
+        }
 
         #chat{
-            border: 1px solid #ccc;
-            border-radius: 4px; 
+            border: 1px solid #ddd;
+            border-radius: 15px; 
             overflow: hidden;
-            width: 350px;
-            height: 100%;
+            width: 400px;
+            height: 600px;
             position: relative;
+            background-color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .romboide {
@@ -96,25 +200,76 @@
             color: white;
             padding: 8px 16px;
             border: none;
-            transform: skewX(-20deg); /* Inclinación tipo romboide */
+            transform: skewX(-20deg);
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
-            margin-right: 10px;
-            }
+            margin-left: 10px;
+            border-radius: 5px;
+        }
 
         .romboide:hover {
             background-color: #2980b9;
         }
+        
         form{
             display: flex;
             position: absolute;
             bottom: 0;
             width: 100%;
             background-color: #fff;
-            padding: 10px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-            justify-content: space-between;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            align-items: center;
+            border-top: 1px solid #eee;
+        }
+
+        #input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            background-color: #f8f9fa;
+        }
+
+        #input:focus {
+            border-color: #007bff;
+            background-color: rgb(117, 117, 117);
+        }
+
+        .message {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scroll personalizado */
+        #messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #messages::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        #messages::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
         }
     </style>
 </head>
@@ -126,6 +281,5 @@
             <button type="submit" class="romboide">Send</button>
         </form>
     </section>
-
 </body>
 </html>
