@@ -32,27 +32,22 @@
     const input = document.getElementById('input')
     const messages = document.getElementById('messages')
 
-    // Variable para trackear el último minuto mostrado
     let lastMinute = null
 
-    // Función para formatear tiempo
     const formatTime = (date) => {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-    // Función para obtener minuto actual como string
     const getCurrentMinute = (date) => {
         return `${date.getHours()}:${date.getMinutes()}`
     }
 
-    // Función para crear timestamp
     const createTimestamp = (time) => {
         return `<li class="timestamp">
                     <span class="time-label">${time}</span>
                 </li>`
     }
 
-    // Función para crear mensajes con diferentes estilos
     const createMessage = (msg, username, isSent) => {
         const messageClass = isSent ? 'message-sent' : 'message-received'
         return `<li class="message ${messageClass}">
@@ -255,7 +250,6 @@
             }
         }
 
-        /* Scroll personalizado */
         #messages::-webkit-scrollbar {
             width: 6px;
         }

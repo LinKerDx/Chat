@@ -1,13 +1,12 @@
 import express from 'express'
 import logger from 'morgan'
-import dotenv from 'dotenv'
-import { createClient } from '@libsql/client'
+import { db } from './db/messages_repository.js'
 
 import { Server } from 'socket.io'
 import { createServer } from 'node:http'
+import { authdb } from './db/user_repository.js'
 
 
-dotenv.config()
 
 const port = process.env.PORT ?? 3000
 
@@ -19,16 +18,19 @@ const io = new Server(server, {
     }
 })
 
-const db = createClient({
-    url: 'libsql://select-maginty-linkerdx.aws-us-east-2.turso.io',
-    authToken: process.env.DB_TOKEN
-})
+
 
 await db.execute(`CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content TEXT NOT NULL,
     user TEXT,
     timestamp DATETIME DEFAULT (datetime('now', 'localtime'))
+)`)
+
+await authdb.execute(`CREATE TABLE IF NOT EXISTS users (
+    _id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
 )`)
 
 io.on('connection', async (socket) => {
@@ -76,6 +78,23 @@ app.get('/', (req, res) => {
     res.sendFile(process.cwd() + '/client/index.html')
 })
 
+
+app.post('/register', (req, res) => {
+    const { username, password } = req.body
+    console.log(req.body)
+
+    try {
+        const id = UserRepository.create({ username, password }) 
+        res.send({ id })
+    } catch (error) {
+        console.error('Error creating user:', error)
+        res.status(400).send({ error: error.message })
+    }
+})
+app.post('/login', (req, res) => { })
+app.post('/logout', (req, res) => { })
+
+app.get('/protected', (req, res) => { })
 server.listen(port, () => {
     console.log(`Server running on port ${port}`)
 })
