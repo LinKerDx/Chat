@@ -4,13 +4,14 @@ import { db } from './db/messages_repository.js'
 
 import { Server } from 'socket.io'
 import { createServer } from 'node:http'
-import { authdb } from './db/user_repository.js'
+import { authdb, UserRepository } from './db/user_repository.js'
 
 
 
 const port = process.env.PORT ?? 3000
-
 const app = express()
+app.use(express.json())
+
 const server = createServer(app)
 const io = new Server(server, {
     connectionStateRecovery: {
@@ -79,12 +80,11 @@ app.get('/', (req, res) => {
 })
 
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
     const { username, password } = req.body
-    console.log(req.body)
 
     try {
-        const id = UserRepository.create({ username, password }) 
+        const id = await UserRepository.create({ username, password })
         res.send({ id })
     } catch (error) {
         console.error('Error creating user:', error)
