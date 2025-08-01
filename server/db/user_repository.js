@@ -65,11 +65,15 @@ export class UserRepository {
     static async login({ username, password }) {
         ValidationError.ValidateUser(username, password)
         const existingUser = await authdb.execute(
-            'SELECT _id FROM users WHERE username = ?',
+            'SELECT _id, password FROM users WHERE username = ?',
             [username]
         );
         if (!existingUser.rows || existingUser.rows.length === 0) {
             throw new Error("User does not exist");
+        }
+        const isValidPassword = await bcrypt.compare(password, existingUser.rows[0].password);
+        if (!isValidPassword) {
+            throw new Error("Invalid password");
         }
 
 
