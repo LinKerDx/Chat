@@ -65,9 +65,10 @@ export class UserRepository {
     static async login({ username, password }) {
         ValidationError.ValidateUser(username, password)
         const existingUser = await authdb.execute(
-            'SELECT _id, password FROM users WHERE username = ?',
+            'SELECT * FROM users WHERE username = ?',
             [username]
         );
+        console.log('Existing user:', existingUser)
         if (!existingUser.rows || existingUser.rows.length === 0) {
             throw new Error("User does not exist");
         }
@@ -75,7 +76,11 @@ export class UserRepository {
         if (!isValidPassword) {
             throw new Error("Invalid password");
         }
-
+        return {
+            _id: existingUser.rows[0]._id,
+            username: existingUser.rows[0].username,
+            success: true
+        };
 
     }
 
